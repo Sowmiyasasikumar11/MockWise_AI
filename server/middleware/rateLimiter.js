@@ -18,4 +18,13 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { apiLimiter, authLimiter };
+// Strict limiter for AI Generation routes — 5 attempts per 15 minutes to prevent Gemini quota abuse
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: 'AI generation limit reached. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { apiLimiter, authLimiter, aiLimiter };

@@ -90,6 +90,23 @@ const userSchema = new mongoose.Schema(
       max:     10,
     },
 
+    // ── Aptitude Stats ─────────────────────────────────────────────
+    aptitudeTestsTaken: {
+      type: Number,
+      default: 0,
+    },
+
+    averageAptitudeScore: {
+      type: Number,
+      default: 0,
+    },
+
+    latestAptitudeResult: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'AptitudeResult',
+      default: null,
+    },
+
     // ── Account State ──────────────────────────────────────────────
     isActive: {
       type:    Boolean,
@@ -151,6 +168,9 @@ userSchema.methods.toSafeObject = function () {
     isProfileComplete: this.isProfileComplete,
     totalInterviews:   this.totalInterviews,
     averageScore:      this.averageScore,
+    aptitudeTestsTaken: this.aptitudeTestsTaken,
+    averageAptitudeScore: this.averageAptitudeScore,
+    latestAptitudeResult: this.latestAptitudeResult,
     isActive:          this.isActive,
     lastLoginAt:       this.lastLoginAt,
     createdAt:         this.createdAt,

@@ -9,6 +9,7 @@ import axios from 'axios'
 const API = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
+  timeout: 90000, // 90 seconds — handles Gemini retry waits gracefully
 })
 
 // ── Request Interceptor: attach token ───────────────────────────────

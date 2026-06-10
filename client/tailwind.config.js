@@ -4,6 +4,11 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  safelist: [
+    'bg-green-500/10', 'border-green-500/50', 'text-green-400', 'ring-green-500/50',
+    'bg-amber-500/10', 'border-amber-500/50', 'text-amber-400', 'ring-amber-500/50',
+    'bg-red-500/10', 'border-red-500/50', 'text-red-400', 'ring-red-500/50'
+  ],
   theme: {
     extend: {
       fontFamily: {

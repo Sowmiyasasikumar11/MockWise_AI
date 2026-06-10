@@ -2,13 +2,9 @@ const express = require('express');
 const cors    = require('cors');
 const dotenv  = require('dotenv');
 const path    = require('path');
-const connectDB = require('./config/db');
 
 // ── Load env ────────────────────────────────────────────────────────
 dotenv.config();
-
-// ── Connect to MongoDB ───────────────────────────────────────────────
-connectDB();
 
 const app = express();
 
@@ -23,6 +19,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Route Imports (added incrementally per module) ───────────────────
 app.use('/api/v1/auth',      require('./routes/auth.routes'));
+app.use('/api/v1/aptitude',  require('./routes/aptitude.routes'));
 // app.use('/api/v1/interview', require('./routes/interview.routes'));
 // app.use('/api/v1/evaluation',require('./routes/evaluation.routes'));
 // app.use('/api/v1/resume',    require('./routes/resume.routes'));

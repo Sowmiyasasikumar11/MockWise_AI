@@ -2,11 +2,13 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  Brain, ChevronLeft, ChevronRight, LayoutDashboard,
+  Brain, LayoutDashboard,
   Code2, Mic, Briefcase, FileText, BarChart3, User,
   Settings, LogOut, Zap, BookOpen, TrendingUp, Menu, X,
   Target, Award, Clock, Sparkles, ChevronDown, Bot
 } from 'lucide-react'
+import Sidebar from '../../components/dashboard/Sidebar'
+import api from '../../services/api'
 
 // ── 30 Career & Interview-Focused Motivational Quotes ──────────────
 const QUOTES = [
@@ -44,133 +46,7 @@ const QUOTES = [
   { text: "The best preparation is not cramming — it's deep, deliberate practice.", role: null },
 ]
 
-// ── Navigation items ────────────────────────────────────────────────
-const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Dashboard',       href: '/dashboard',  active: true  },
-  { icon: Brain,           label: 'Aptitude',         href: '/aptitude',   soon: true    },
-  { icon: Code2,           label: 'Coding Interview', href: '/coding',     soon: true    },
-  { icon: Mic,             label: 'Voice Interview',  href: '/voice',      soon: true    },
-  { icon: Briefcase,       label: 'HR Interview',     href: '/hr',         soon: true    },
-  { icon: FileText,        label: 'Resume Review',    href: '/resume',     soon: true    },
-  { icon: Bot,             label: 'AI Coach',         href: '/coach',      soon: true    },
-  { icon: BarChart3,       label: 'Analytics',        href: '/analytics',  soon: true    },
-]
 
-const NAV_BOTTOM = [
-  { icon: User,     label: 'Profile',  href: '/profile'  },
-  { icon: Settings, label: 'Settings', href: '/settings', soon: true },
-]
-
-// ── Recent Activity mock data ───────────────────────────────────────
-const RECENT_ACTIVITY = [
-  { label: 'Profile created',       time: 'Just now',    icon: User,      color: 'text-indigo-400' },
-  { label: 'Account verified',      time: '2 min ago',   icon: Award,     color: 'text-green-400'  },
-  { label: 'Onboarding completed',  time: '5 min ago',   icon: Target,    color: 'text-purple-400' },
-]
-
-// ── Recommended Practice ────────────────────────────────────────────
-const RECOMMENDED = [
-  { label: 'Introduction & Tell me about yourself', tag: 'Beginner',  color: 'bg-green-500/10  text-green-400  border-green-500/20'  },
-  { label: 'STAR Method for Behavioral Questions',  tag: 'Essential', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
-  { label: 'Common DSA Patterns',                   tag: 'Practice',  color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
-  { label: 'System Design Fundamentals',             tag: 'Advanced',  color: 'bg-amber-500/10  text-amber-400  border-amber-500/20'  },
-]
-
-// ── Sidebar Component ───────────────────────────────────────────────
-function Sidebar({ collapsed, setCollapsed, onLogout }) {
-  return (
-    <aside
-      className={`flex flex-col h-screen bg-[#0d0d1a] border-r border-[#1e1e35] transition-all duration-300 flex-shrink-0 ${
-        collapsed ? 'w-[68px]' : 'w-64'
-      }`}
-    >
-      {/* Brand */}
-      <div className={`flex items-center gap-3 px-4 py-5 border-b border-[#1e1e35] ${collapsed ? 'justify-center' : ''}`}>
-        <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-          <Brain className="w-4 h-4 text-indigo-400" />
-        </div>
-        {!collapsed && (
-          <span className="text-white font-bold text-base whitespace-nowrap">MockWise AI</span>
-        )}
-      </div>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute top-5 -right-3 w-6 h-6 rounded-full bg-[#1e1e35] border border-[#2d2d4e] flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600/30 transition-all duration-200 z-50"
-        style={{ position: 'absolute', left: collapsed ? '54px' : '245px' }}
-      >
-        {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-      </button>
-
-      {/* Main nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-        {!collapsed && (
-          <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-2">
-            Menu
-          </p>
-        )}
-        {NAV_ITEMS.map(({ icon: Icon, label, href, active, soon }) => (
-          <Link
-            key={label}
-            to={soon ? '#' : href}
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative ${
-              active
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            } ${collapsed ? 'justify-center' : ''}`}
-            title={collapsed ? label : undefined}
-          >
-            <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-indigo-400' : ''}`} />
-            {!collapsed && (
-              <>
-                <span className="flex-1">{label}</span>
-                {soon && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-400">
-                    Soon
-                  </span>
-                )}
-              </>
-            )}
-            {/* Active indicator */}
-            {active && (
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-l-full" />
-            )}
-          </Link>
-        ))}
-      </nav>
-
-      {/* Bottom nav */}
-      <div className="px-2 pb-4 pt-2 border-t border-[#1e1e35] space-y-1">
-        {NAV_BOTTOM.map(({ icon: Icon, label, href, soon }) => (
-          <Link
-            key={label}
-            to={soon ? '#' : href}
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200 ${
-              collapsed ? 'justify-center' : ''
-            }`}
-            title={collapsed ? label : undefined}
-          >
-            <Icon className="w-4 h-4 flex-shrink-0" />
-            {!collapsed && <span>{label}</span>}
-          </Link>
-        ))}
-
-        {/* Logout */}
-        <button
-          onClick={onLogout}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 ${
-            collapsed ? 'justify-center' : ''
-          }`}
-          title={collapsed ? 'Logout' : undefined}
-        >
-          <LogOut className="w-4 h-4 flex-shrink-0" />
-          {!collapsed && <span>Logout</span>}
-        </button>
-      </div>
-    </aside>
-  )
-}
 
 // ── Main Dashboard Component ────────────────────────────────────────
 function DashboardPage() {
@@ -179,6 +55,21 @@ function DashboardPage() {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [recentActivity, setRecentActivity] = useState(null)
+  
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      try {
+        const response = await api.get('/aptitude/history')
+        if (response.data.success && response.data.data.length > 0) {
+          setRecentActivity(response.data.data[0])
+        }
+      } catch (err) {
+        console.error("Failed to fetch recent activity", err)
+      }
+    }
+    fetchRecentActivity()
+  }, [])
 
   // Pick a random quote, biased towards user's target roles if available
   const quote = useMemo(() => {
@@ -204,8 +95,8 @@ function DashboardPage() {
 
   const stats = [
     { label: 'Interviews',  value: user?.totalInterviews ?? 0,                                  icon: Mic,       color: 'from-indigo-500/20 to-indigo-600/10', border: 'border-indigo-500/20', text: 'text-indigo-400'  },
-    { label: 'Avg Score',   value: user?.averageScore ? user.averageScore.toFixed(1) : '—',     icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20', text: 'text-purple-400'  },
-    { label: 'Skills',      value: user?.skills?.length ?? 0,                                    icon: Zap,       color: 'from-teal-500/20   to-teal-600/10',   border: 'border-teal-500/20',   text: 'text-teal-400'    },
+    { label: 'Aptitude Tests', value: user?.aptitudeTestsTaken ?? 0,                             icon: Brain,     color: 'from-blue-500/20 to-blue-600/10', border: 'border-blue-500/20', text: 'text-blue-400'  },
+    { label: 'Avg Aptitude', value: user?.averageAptitudeScore ? `${user.averageAptitudeScore.toFixed(0)}%` : '—', icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20', text: 'text-purple-400'  },
     { label: 'Target Roles', value: user?.targetRoles?.length ?? 0,                              icon: Target,    color: 'from-amber-500/20  to-amber-600/10',  border: 'border-amber-500/20',  text: 'text-amber-400'   },
   ]
 
@@ -219,6 +110,7 @@ function DashboardPage() {
           collapsed={sidebarCollapsed}
           setCollapsed={setSidebarCollapsed}
           onLogout={handleLogout}
+          currentPath="/dashboard"
         />
       </div>
 
@@ -234,6 +126,7 @@ function DashboardPage() {
               collapsed={false}
               setCollapsed={() => {}}
               onLogout={handleLogout}
+              currentPath="/dashboard"
             />
             <button
               onClick={() => setMobileSidebarOpen(false)}
@@ -371,18 +264,29 @@ function DashboardPage() {
                   <h2 className="text-white font-semibold text-sm">Recent Activity</h2>
                 </div>
                 <div className="space-y-3">
-                  {RECENT_ACTIVITY.map(({ label, time, icon: Icon, color }, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors duration-150 group">
-                      <div className="w-8 h-8 rounded-lg bg-[#1e1e35] flex items-center justify-center flex-shrink-0">
-                        <Icon className={`w-4 h-4 ${color}`} />
+                  {recentActivity ? (
+                    <div className="flex items-center gap-4 p-3 rounded-xl bg-[#1e1e35]/40 border border-[#2d2d4e] hover:bg-[#1e1e35]/80 transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                        <Brain className="w-5 h-5 text-indigo-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-slate-200 text-sm font-medium truncate">{label}</p>
+                        <p className="text-white text-sm font-medium truncate">Aptitude: {recentActivity.category}</p>
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {new Date(recentActivity.completedAt).toLocaleDateString()} · {recentActivity.difficulty}
+                        </p>
                       </div>
-                      <span className="text-slate-600 text-xs flex-shrink-0">{time}</span>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-sm font-bold ${
+                          recentActivity.percentage >= 70 ? 'text-emerald-400' :
+                          recentActivity.percentage >= 40 ? 'text-amber-400' :
+                          'text-rose-400'
+                        }`}>
+                          {Math.round(recentActivity.percentage)}%
+                        </p>
+                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Score</p>
+                      </div>
                     </div>
-                  ))}
-                  {RECENT_ACTIVITY.length === 0 && (
+                  ) : (
                     <p className="text-slate-500 text-sm text-center py-4">No activity yet. Start an interview!</p>
                   )}
                 </div>
@@ -395,21 +299,7 @@ function DashboardPage() {
                   <h2 className="text-white font-semibold text-sm">Recommended Practice</h2>
                 </div>
                 <div className="space-y-3">
-                  {RECOMMENDED.map(({ label, tag, color }, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 p-3 rounded-xl border border-[#1e1e35] hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all duration-200 cursor-pointer group"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-slate-200 text-sm font-medium truncate group-hover:text-white transition-colors">
-                          {label}
-                        </p>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${color}`}>
-                        {tag}
-                      </span>
-                    </div>
-                  ))}
+                  <p className="text-slate-500 text-sm text-center py-4">Recommendations will appear here.</p>
                 </div>
               </div>
             </div>
