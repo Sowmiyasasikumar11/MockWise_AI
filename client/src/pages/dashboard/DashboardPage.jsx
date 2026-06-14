@@ -97,7 +97,9 @@ function DashboardPage() {
     { label: 'Interviews',  value: user?.totalInterviews ?? 0,                                  icon: Mic,       color: 'from-indigo-500/20 to-indigo-600/10', border: 'border-indigo-500/20', text: 'text-indigo-400'  },
     { label: 'Aptitude Tests', value: user?.aptitudeTestsTaken ?? 0,                             icon: Brain,     color: 'from-blue-500/20 to-blue-600/10', border: 'border-blue-500/20', text: 'text-blue-400'  },
     { label: 'Avg Aptitude', value: user?.averageAptitudeScore ? `${user.averageAptitudeScore.toFixed(0)}%` : '—', icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20', text: 'text-purple-400'  },
-    { label: 'Target Roles', value: user?.targetRoles?.length ?? 0,                              icon: Target,    color: 'from-amber-500/20  to-amber-600/10',  border: 'border-amber-500/20',  text: 'text-amber-400'   },
+    { label: 'Coding Solved', value: user?.codingProblemsSolved ?? 0,                            icon: Code2,     color: 'from-emerald-500/20 to-emerald-600/10', border: 'border-emerald-500/20', text: 'text-emerald-400' },
+    { label: 'Coding Acc',    value: user?.codingAccuracy ? `${user.codingAccuracy}%` : '—',     icon: Award,     color: 'from-rose-500/20 to-rose-600/10', border: 'border-rose-500/20', text: 'text-rose-400' },
+    { label: 'Target Roles',  value: user?.targetRoles?.length ?? 0,                             icon: Target,    color: 'from-amber-500/20  to-amber-600/10',  border: 'border-amber-500/20',  text: 'text-amber-400'   },
   ]
 
   return (
@@ -212,8 +214,7 @@ function DashboardPage() {
               )}
             </div>
 
-            {/* ── Stats cards ──────────────────────────────────────── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {stats.map(({ label, value, icon: Icon, color, border, text }) => (
                 <div
                   key={label}

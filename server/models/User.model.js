@@ -107,6 +107,22 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    // ── Coding Stats ───────────────────────────────────────────────
+    codingProblemsSolved: {
+      type: Number,
+      default: 0,
+    },
+
+    codingAccuracy: {
+      type: Number,
+      default: 0,
+    },
+
+    recentCodingActivity: {
+      type: Date,
+      default: null,
+    },
+
     // ── Account State ──────────────────────────────────────────────
     isActive: {
       type:    Boolean,
@@ -171,6 +187,9 @@ userSchema.methods.toSafeObject = function () {
     aptitudeTestsTaken: this.aptitudeTestsTaken,
     averageAptitudeScore: this.averageAptitudeScore,
     latestAptitudeResult: this.latestAptitudeResult,
+    codingProblemsSolved: this.codingProblemsSolved,
+    codingAccuracy:       this.codingAccuracy,
+    recentCodingActivity: this.recentCodingActivity,
     isActive:          this.isActive,
     lastLoginAt:       this.lastLoginAt,
     createdAt:         this.createdAt,

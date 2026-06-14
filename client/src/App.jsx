@@ -14,6 +14,7 @@ import OnboardingPage from './pages/auth/OnboardingPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import AptitudePage from './pages/dashboard/AptitudePage'
 import AptitudeHistoryPage from './pages/dashboard/AptitudeHistoryPage'
+import CodingPage from './pages/coding/CodingPage'
 
 // ────────────────────────────────────────────────────────────────────
 // PublicRoute — redirects already-authenticated users to /dashboard.
@@ -77,6 +78,7 @@ function App() {
             <Route path="/profile"    element={<ProfilePage />} />
             <Route path="/aptitude"   element={<AptitudePage />} />
             <Route path="/aptitude/history" element={<AptitudeHistoryPage />} />
+            <Route path="/coding"     element={<CodingPage />} />
             {/* Module routes added in later sprints */}
           </Route>
 

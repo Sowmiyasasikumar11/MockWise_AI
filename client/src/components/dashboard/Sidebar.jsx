@@ -9,7 +9,7 @@ import {
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard',       href: '/dashboard',  active: false },
   { icon: Brain,           label: 'Aptitude',         href: '/aptitude',   active: false },
-  { icon: Code2,           label: 'Coding Interview', href: '/coding',     soon: true    },
+  { icon: Code2,           label: 'Coding Interview', href: '/coding',     active: false },
   { icon: Mic,             label: 'Voice Interview',  href: '/voice',      soon: true    },
   { icon: Briefcase,       label: 'HR Interview',     href: '/hr',         soon: true    },
   { icon: FileText,        label: 'Resume Review',    href: '/resume',     soon: true    },

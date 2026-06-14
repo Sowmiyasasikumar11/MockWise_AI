@@ -26,7 +26,7 @@ app.use('/api/v1/aptitude',  require('./routes/aptitude.routes'));
 // app.use('/api/v1/dashboard', require('./routes/dashboard.routes'));
 // app.use('/api/v1/hr',        require('./routes/hr.routes'));
 // app.use('/api/v1/voice',     require('./routes/voice.routes'));
-// app.use('/api/v1/coding',    require('./routes/coding.routes'));
+app.use('/api/v1/coding',    require('./routes/coding.routes'));
 
 // ── Health Check ────────────────────────────────────────────────────
 app.get('/api/v1/health', (_req, res) => {
