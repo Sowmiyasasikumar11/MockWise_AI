@@ -22,7 +22,7 @@ app.use('/api/v1/auth',      require('./routes/auth.routes'));
 app.use('/api/v1/aptitude',  require('./routes/aptitude.routes'));
 // app.use('/api/v1/interview', require('./routes/interview.routes'));
 // app.use('/api/v1/evaluation',require('./routes/evaluation.routes'));
-// app.use('/api/v1/resume',    require('./routes/resume.routes'));
+app.use('/api/v1/resume',    require('./routes/resume.routes'));
 // app.use('/api/v1/dashboard', require('./routes/dashboard.routes'));
 // app.use('/api/v1/hr',        require('./routes/hr.routes'));
 // app.use('/api/v1/voice',     require('./routes/voice.routes'));
