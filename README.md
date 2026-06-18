@@ -13,11 +13,10 @@ MockWise AI helps candidates prepare for technical and HR interviews using AI-ge
 | 🔐 Authentication | Register, Login, JWT-based sessions | ✅ Live |
 | 🧭 Onboarding | Multi-step profile setup with role + skills selection | ✅ Live |
 | 📊 Dashboard | Personalized stats, interview modules overview | ✅ Live |
-| 🎤 Voice Interview | AI-powered spoken mock interviews | 🔜 Coming Soon |
-| 💻 Coding Interview | DSA problems with real-time AI hints | 🔜 Coming Soon |
-| 🤝 HR Interview | Behavioral questions & STAR method practice | 🔜 Coming Soon |
-| 📄 Resume Review | AI analysis & improvement suggestions | 🔜 Coming Soon |
-| 📈 Evaluation Report | Performance analytics & scoring | 🔜 Coming Soon |
+| 🧠 Aptitude Module | Dynamic logic & quantitative reasoning tests | ✅ Live |
+| 💻 Coding Module | DSA problems with real-time AI evaluation | ✅ Live |
+| 📄 Resume Analyzer | AI analysis & improvement suggestions | 🔜 Coming Soon |
+| 🎤 HR Interview | Behavioral questions & STAR method practice | 🔜 Coming Soon |
 
 ---
 

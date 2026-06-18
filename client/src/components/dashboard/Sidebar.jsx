@@ -8,18 +8,14 @@ import {
 // ── Navigation items ────────────────────────────────────────────────
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard',       href: '/dashboard',  active: false },
-  { icon: Brain,           label: 'Aptitude',         href: '/aptitude',   active: false },
-  { icon: Code2,           label: 'Coding Interview', href: '/coding',     active: false },
-  { icon: Mic,             label: 'Voice Interview',  href: '/voice',      soon: true    },
-  { icon: Briefcase,       label: 'HR Interview',     href: '/hr',         soon: true    },
-  { icon: FileText,        label: 'Resume Review',    href: '/resume',     soon: true    },
-  { icon: Bot,             label: 'AI Coach',         href: '/coach',      soon: true    },
-  { icon: BarChart3,       label: 'Analytics',        href: '/analytics',  soon: true    },
+  { icon: Brain,           label: 'Aptitude',        href: '/aptitude',   active: false },
+  { icon: Code2,           label: 'Coding',          href: '/coding',     active: false },
+  { icon: FileText,        label: 'Resume Analyzer', href: '/resume',     soon: true },
+  { icon: Mic,             label: 'HR Interview',    href: '/hr',         soon: true },
 ]
 
 const NAV_BOTTOM = [
   { icon: User,     label: 'Profile',  href: '/profile'  },
-  { icon: Settings, label: 'Settings', href: '/settings', soon: true },
 ]
 
 export default function Sidebar({ collapsed, setCollapsed, onLogout, currentPath }) {

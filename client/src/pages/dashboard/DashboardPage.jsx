@@ -175,7 +175,7 @@ function DashboardPage() {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+          <div className="max-w-[1600px] mx-auto px-6 md:px-10 py-8 space-y-8">
 
             {/* ── Welcome section ──────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
