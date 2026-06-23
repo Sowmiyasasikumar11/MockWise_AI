@@ -1,15 +1,17 @@
 const fs = require('fs');
+const path = require('path');
 const pdfParse = require('pdf-parse');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ResumeAnalysis = require('../models/ResumeAnalysis.model');
+const User = require('../models/User.model');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const FALLBACK_MODELS = [
-  process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite',
-  'gemini-2.0-flash-lite',
-  'gemini-2.5-flash',
+  process.env.GEMINI_MODEL || 'gemini-2.0-flash',
   'gemini-2.0-flash',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash-lite',
 ];
 const MODEL_LIST = [...new Set(FALLBACK_MODELS)];
 
@@ -24,17 +26,29 @@ const generateWithModelFallback = async (prompt) => {
       return result;
     } catch (err) {
       lastError = err;
-      const isRateLimited = err.status === 429;
-      const isNotFound    = err.status === 404;
+      const status = err.status || err.statusCode || (err.response && err.response.status);
 
-      if (isRateLimited || isNotFound) {
-        console.log(`⚠️  Model "${modelName}" ${isRateLimited ? 'rate limited' : 'not available'}. Trying next model...`);
+      // Invalid API key or forbidden — no point retrying other models
+      if (status === 400 || status === 401 || status === 403) {
+        console.error(`❌ Auth error on model "${modelName}" (HTTP ${status}): Check your GEMINI_API_KEY in .env`);
+        const authErr = new Error('Invalid or missing Gemini API key. Please check your GEMINI_API_KEY in the server .env file.');
+        authErr.status = status;
+        authErr.isAuthError = true;
+        throw authErr;
+      }
+
+      // Retryable: rate limited (429), model not found (404), or service unavailable (503)
+      const isRetryable = status === 429 || status === 404 || status === 503;
+      if (isRetryable) {
+        console.log(`⚠️  Model "${modelName}" ${status === 429 ? 'rate limited' : status === 503 ? 'unavailable' : 'not found'}. Trying next model...`);
         continue;
       }
+
+      // Any other unexpected error — surface it immediately
       throw err;
     }
   }
-  console.log('⚠️  All models rate limited. Returning 429 to client.');
+  console.log('⚠️  All models rate limited/unavailable. Returning 429 to client.');
   throw lastError;
 };
 
@@ -47,11 +61,19 @@ exports.uploadResume = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const dataBuffer = fs.readFileSync(req.file.path);
+    const filePath = req.file.path;
+    const dataBuffer = fs.readFileSync(filePath);
     const data = await pdfParse(dataBuffer);
 
-    // Optionally delete the file after parsing to save space, but the plan stores 'filename', so let's keep it.
-    
+    // Delete the temporary file from disk after successful text extraction
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`🗑️  Deleted temp file: ${req.file.filename}`);
+    } catch (unlinkErr) {
+      // Non-fatal — log but don't block the response
+      console.warn(`⚠️  Could not delete temp file ${req.file.filename}:`, unlinkErr.message);
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -61,6 +83,10 @@ exports.uploadResume = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error parsing PDF:', error);
+    // Attempt cleanup even on error
+    if (req.file?.path) {
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+    }
     res.status(500).json({ success: false, message: 'Failed to parse the uploaded resume.' });
   }
 };
@@ -126,6 +152,12 @@ exports.analyzeResume = async (req, res, next) => {
       suggestions: analysisData.suggestions || []
     });
 
+    // Update user's resume stats (denormalized for dashboard reads)
+    await User.findByIdAndUpdate(userId, {
+      $inc: { resumesAnalyzed: 1 },
+      $set: { lastResumeAnalyzedAt: new Date() }
+    });
+
     res.status(201).json({
       success: true,
       data: resumeAnalysis
@@ -133,16 +165,27 @@ exports.analyzeResume = async (req, res, next) => {
 
   } catch (error) {
     console.error('Error analyzing resume:', error);
+
+    // Invalid API key
+    if (error.isAuthError) {
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    // Rate limit / all models exhausted
     if (error.status === 429 || error.status === 503) {
       let waitSec = 30;
       const retryMatch = error.message?.match(/retry in (\d+\.?\d*)s/i);
       if (retryMatch) waitSec = Math.ceil(parseFloat(retryMatch[1]));
       return res.status(429).json({
         success: false,
-        message: \`All AI models are rate limited. Please wait \${waitSec} seconds and try again.\`,
+        message: `All AI models are rate limited. Please wait ${waitSec} seconds and try again.`,
         retryAfterSeconds: waitSec
       });
     }
+
     res.status(500).json({ success: false, message: error.message || 'Server error analyzing resume' });
   }
 };

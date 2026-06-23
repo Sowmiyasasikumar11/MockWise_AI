@@ -32,4 +32,10 @@ const ResumeAnalysisSchema = new mongoose.Schema({
   }
 });
 
+// ────────────────────────────────────────────────────────────────────
+// Indexes
+// ────────────────────────────────────────────────────────────────────
+ResumeAnalysisSchema.index({ userId: 1, createdAt: -1 }); // Fast per-user history (sorted newest first)
+ResumeAnalysisSchema.index({ userId: 1 });                 // General user lookup
+
 module.exports = mongoose.model('ResumeAnalysis', ResumeAnalysisSchema);

@@ -123,6 +123,17 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    // ── Resume Stats ───────────────────────────────────────────────
+    resumesAnalyzed: {
+      type: Number,
+      default: 0,
+    },
+
+    lastResumeAnalyzedAt: {
+      type: Date,
+      default: null,
+    },
+
     // ── Account State ──────────────────────────────────────────────
     isActive: {
       type:    Boolean,
@@ -141,7 +152,6 @@ const userSchema = new mongoose.Schema(
 // ────────────────────────────────────────────────────────────────────
 // Indexes
 // ────────────────────────────────────────────────────────────────────
-userSchema.index({ email: 1 });           // Fast login lookup
 userSchema.index({ createdAt: -1 });      // Sort by newest
 
 // ────────────────────────────────────────────────────────────────────
@@ -190,6 +200,8 @@ userSchema.methods.toSafeObject = function () {
     codingProblemsSolved: this.codingProblemsSolved,
     codingAccuracy:       this.codingAccuracy,
     recentCodingActivity: this.recentCodingActivity,
+    resumesAnalyzed:      this.resumesAnalyzed,
+    lastResumeAnalyzedAt: this.lastResumeAnalyzedAt,
     isActive:          this.isActive,
     lastLoginAt:       this.lastLoginAt,
     createdAt:         this.createdAt,

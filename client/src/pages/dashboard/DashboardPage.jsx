@@ -94,12 +94,12 @@ function DashboardPage() {
   }
 
   const stats = [
-    { label: 'Interviews',  value: user?.totalInterviews ?? 0,                                  icon: Mic,       color: 'from-indigo-500/20 to-indigo-600/10', border: 'border-indigo-500/20', text: 'text-indigo-400'  },
-    { label: 'Aptitude Tests', value: user?.aptitudeTestsTaken ?? 0,                             icon: Brain,     color: 'from-blue-500/20 to-blue-600/10', border: 'border-blue-500/20', text: 'text-blue-400'  },
-    { label: 'Avg Aptitude', value: user?.averageAptitudeScore ? `${user.averageAptitudeScore.toFixed(0)}%` : '—', icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20', text: 'text-purple-400'  },
-    { label: 'Coding Solved', value: user?.codingProblemsSolved ?? 0,                            icon: Code2,     color: 'from-emerald-500/20 to-emerald-600/10', border: 'border-emerald-500/20', text: 'text-emerald-400' },
-    { label: 'Coding Acc',    value: user?.codingAccuracy ? `${user.codingAccuracy}%` : '—',     icon: Award,     color: 'from-rose-500/20 to-rose-600/10', border: 'border-rose-500/20', text: 'text-rose-400' },
-    { label: 'Target Roles',  value: user?.targetRoles?.length ?? 0,                             icon: Target,    color: 'from-amber-500/20  to-amber-600/10',  border: 'border-amber-500/20',  text: 'text-amber-400'   },
+    { label: 'Interviews',       value: user?.totalInterviews ?? 0,                                         icon: Mic,       color: 'from-indigo-500/20 to-indigo-600/10',  border: 'border-indigo-500/20',  text: 'text-indigo-400'  },
+    { label: 'Aptitude Tests',   value: user?.aptitudeTestsTaken ?? 0,                                      icon: Brain,     color: 'from-blue-500/20 to-blue-600/10',      border: 'border-blue-500/20',    text: 'text-blue-400'    },
+    { label: 'Avg Aptitude',     value: user?.averageAptitudeScore ? `${user.averageAptitudeScore.toFixed(0)}%` : '—', icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20',  text: 'text-purple-400'  },
+    { label: 'Coding Solved',    value: user?.codingProblemsSolved ?? 0,                                    icon: Code2,     color: 'from-emerald-500/20 to-emerald-600/10', border: 'border-emerald-500/20', text: 'text-emerald-400' },
+    { label: 'Coding Acc',       value: user?.codingAccuracy ? `${user.codingAccuracy}%` : '—',             icon: Award,     color: 'from-rose-500/20 to-rose-600/10',      border: 'border-rose-500/20',    text: 'text-rose-400'    },
+    { label: 'Resumes Analyzed', value: user?.resumesAnalyzed ?? 0,                                         icon: FileText,  color: 'from-violet-500/20 to-violet-600/10',  border: 'border-violet-500/20',  text: 'text-violet-400'  },
   ]
 
   return (
@@ -308,17 +308,25 @@ function DashboardPage() {
             {/* ── Quick Action Banner ───────────────────────────────── */}
             <div className="rounded-2xl border border-[#1e1e35] bg-gradient-to-r from-indigo-600/10 to-purple-600/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <h3 className="text-white font-semibold text-base">Ready to start your first interview?</h3>
+                <h3 className="text-white font-semibold text-base">Ready to start your next challenge?</h3>
                 <p className="text-slate-400 text-sm mt-0.5">
-                  Modules are launching soon. Complete your profile to get personalised questions.
+                  Practice aptitude, coding, and get instant AI-powered resume feedback.
                 </p>
               </div>
-              <Link
-                to="/profile"
-                className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors duration-200"
-              >
-                <User className="w-4 h-4" /> Complete Profile
-              </Link>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <Link
+                  to="/resume-analyzer"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 hover:text-violet-200 text-sm font-medium transition-colors duration-200"
+                >
+                  <FileText className="w-4 h-4" /> Analyze Resume
+                </Link>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors duration-200"
+                >
+                  <User className="w-4 h-4" /> Complete Profile
+                </Link>
+              </div>
             </div>
 
           </div>
