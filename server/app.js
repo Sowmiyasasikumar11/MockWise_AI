@@ -21,7 +21,7 @@ app.use('/api/v1/aptitude',  require('./routes/aptitude.routes'));
 // app.use('/api/v1/evaluation',require('./routes/evaluation.routes'));
 app.use('/api/v1/resume',    require('./routes/resume.routes'));
 // app.use('/api/v1/dashboard', require('./routes/dashboard.routes'));
-// app.use('/api/v1/hr',        require('./routes/hr.routes'));
+app.use('/api/v1/hr',        require('./routes/hr.routes'));
 // app.use('/api/v1/voice',     require('./routes/voice.routes'));
 app.use('/api/v1/coding',    require('./routes/coding.routes'));
 

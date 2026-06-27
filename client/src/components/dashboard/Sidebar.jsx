@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { icon: Brain,           label: 'Aptitude',        href: '/aptitude',   active: false },
   { icon: Code2,           label: 'Coding',          href: '/coding',     active: false },
   { icon: FileText,        label: 'Resume Analyzer', href: '/resume-analyzer', soon: false },
-  { icon: Mic,             label: 'HR Interview',    href: '/hr',         soon: true },
+  { icon: Mic,             label: 'HR Interview',    href: '/hr',         soon: false },
 ]
 
 const NAV_BOTTOM = [
