@@ -3,13 +3,338 @@ import { useDropzone } from 'react-dropzone'
 import {
   FileText, UploadCloud, CheckCircle, Clock,
   AlertCircle, Loader2, History, ChevronDown,
-  ChevronUp, Menu, X
+  ChevronUp, Menu, X, Target, Zap, Shield,
+  TrendingUp, TrendingDown, Star, BookOpen,
+  Briefcase, Award, User, AlignLeft, Code,
+  GraduationCap, Phone, XCircle, MinusCircle
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { uploadResume, analyzeResume, getResumeHistory } from '../../services/resumeService'
 import Sidebar from '../../components/dashboard/Sidebar'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Returns colour class + label for an ATS score.
+ */
+function atsColour(score) {
+  if (score >= 75) return { bar: '#22c55e', text: 'text-emerald-400', label: 'Excellent' }
+  if (score >= 50) return { bar: '#f59e0b', text: 'text-amber-400', label: 'Moderate' }
+  return { bar: '#ef4444', text: 'text-rose-400', label: 'Needs Work' }
+}
+
+const SECTION_META = {
+  contact:        { label: 'Contact Information', Icon: Phone },
+  summary:        { label: 'Summary / Objective',  Icon: AlignLeft },
+  education:      { label: 'Education',            Icon: GraduationCap },
+  skills:         { label: 'Skills',               Icon: Code },
+  projects:       { label: 'Projects',             Icon: Briefcase },
+  experience:     { label: 'Experience',           Icon: BookOpen },
+  certifications: { label: 'Certifications',       Icon: Award },
+}
+
+const STATUS_META = {
+  good:             { label: 'Good',              Icon: CheckCircle,  cls: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+  needs_improvement:{ label: 'Needs Improvement', Icon: MinusCircle,  cls: 'text-amber-400',   bg: 'bg-amber-500/10   border-amber-500/20'   },
+  missing:          { label: 'Missing',           Icon: XCircle,      cls: 'text-rose-400',    bg: 'bg-rose-500/10    border-rose-500/20'    },
+}
+
+// ── Sub-components ───────────────────────────────────────────────────
+
+function ATSScoreCard({ score }) {
+  const { bar, text, label } = atsColour(score)
+  const pct = Math.min(100, Math.max(0, score))
+
+  return (
+    <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+      <h3 className="text-white font-semibold mb-5 flex items-center gap-2">
+        <Target className="w-5 h-5 text-indigo-400" />
+        ATS Compatibility Score
+      </h3>
+
+      <div className="flex items-center gap-6 flex-wrap">
+        {/* Big score circle */}
+        <div className="relative w-28 h-28 flex-shrink-0">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#1e1e35" strokeWidth="10" />
+            <circle
+              cx="50" cy="50" r="42" fill="none"
+              stroke={bar}
+              strokeWidth="10"
+              strokeDasharray={`${2 * Math.PI * 42}`}
+              strokeDashoffset={`${2 * Math.PI * 42 * (1 - pct / 100)}`}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 1s ease' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className={`text-2xl font-bold ${text}`}>{pct}</span>
+            <span className="text-slate-500 text-xs">/100</span>
+          </div>
+        </div>
+
+        {/* Progress bar + label */}
+        <div className="flex-1 min-w-[180px]">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-slate-300 text-sm font-medium">ATS Score</span>
+            <span className={`text-sm font-semibold ${text}`}>{label}</span>
+          </div>
+          <div className="h-3 bg-[#2d2d4e] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-1000"
+              style={{ width: `${pct}%`, background: bar }}
+            />
+          </div>
+          <p className="text-slate-500 text-xs mt-3 leading-relaxed">
+            {pct >= 75
+              ? 'Your resume is well-optimised for ATS systems. Most relevant keywords and sections are present.'
+              : pct >= 50
+              ? 'Moderate ATS compatibility. Adding more keywords, quantified metrics, and improving sections will help.'
+              : 'Low ATS compatibility. Recruiters\' systems may filter this resume out. Significant improvements recommended.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MissingSkillsCard({ missingSkills }) {
+  if (!missingSkills || missingSkills.length === 0) return null
+  return (
+    <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+      <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+        <Zap className="w-5 h-5 text-rose-400" />
+        Missing Skills
+        <span className="ml-auto text-xs text-slate-500">Skills important to your field but absent in your resume</span>
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {missingSkills.map((skill, i) => (
+          <span
+            key={i}
+            className="px-3 py-1 bg-rose-500/10 text-rose-300 border border-rose-500/20 rounded-full text-sm flex items-center gap-1.5"
+          >
+            <XCircle className="w-3 h-3" /> {skill}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SectionAnalysisCard({ sectionAnalysis }) {
+  if (!sectionAnalysis) return null
+  const entries = Object.entries(SECTION_META)
+
+  return (
+    <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+      <h3 className="text-white font-semibold mb-5 flex items-center gap-2">
+        <Shield className="w-5 h-5 text-purple-400" />
+        Resume Section Analysis
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {entries.map(([key, { label, Icon }]) => {
+          const status = sectionAnalysis[key] || 'missing'
+          const sm = STATUS_META[status] || STATUS_META.missing
+          const SIcon = sm.Icon
+          return (
+            <div
+              key={key}
+              className={`flex items-start gap-3 p-3 rounded-xl border ${sm.bg}`}
+            >
+              <Icon className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-white text-xs font-medium truncate">{label}</p>
+                <div className={`flex items-center gap-1 mt-1 ${sm.cls}`}>
+                  <SIcon className="w-3 h-3 flex-shrink-0" />
+                  <span className="text-xs">{sm.label}</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ActionableSuggestionsCard({ actionableSuggestions }) {
+  if (!actionableSuggestions || actionableSuggestions.length === 0) return null
+  return (
+    <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+      <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-sky-400" />
+        Actionable Suggestions
+      </h3>
+      <ol className="space-y-3">
+        {actionableSuggestions.map((sug, i) => (
+          <li key={i} className="flex gap-3 text-slate-300 text-sm">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold flex items-center justify-center">
+              {i + 1}
+            </span>
+            <span className="leading-relaxed pt-0.5">{sug}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
+function StrengthsWeaknessesCard({ strengths, weaknesses }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {/* Strengths */}
+      {strengths && strengths.length > 0 && (
+        <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+          <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+            <Star className="w-5 h-5 text-emerald-400" />
+            Top Strengths
+          </h3>
+          <ul className="space-y-2.5">
+            {strengths.map((s, i) => (
+              <li key={i} className="flex gap-2 text-slate-300 text-sm">
+                <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Weaknesses */}
+      {weaknesses && weaknesses.length > 0 && (
+        <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+          <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+            <TrendingDown className="w-5 h-5 text-rose-400" />
+            Areas to Improve
+          </h3>
+          <ul className="space-y-2.5">
+            {weaknesses.map((w, i) => (
+              <li key={i} className="flex gap-2 text-slate-300 text-sm">
+                <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                <span>{w}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MockWiseAdvantageCard() {
+  const features = [
+    {
+      icon: Target,
+      title: 'ATS Score & Section Analysis',
+      desc: 'Get an estimated ATS compatibility score and per-section breakdown — just like Jobscan.',
+      colour: 'text-indigo-400',
+      bg: 'bg-indigo-500/10 border-indigo-500/20',
+    },
+    {
+      icon: Code,
+      title: 'Coding Interview Prep',
+      desc: 'Practice real DSA problems and get AI-powered code evaluation — unique to MockWise AI.',
+      colour: 'text-sky-400',
+      bg: 'bg-sky-500/10 border-sky-500/20',
+    },
+    {
+      icon: User,
+      title: 'HR & Behavioural Interviews',
+      desc: 'Simulate HR rounds with AI-driven questions and instant feedback on your responses.',
+      colour: 'text-purple-400',
+      bg: 'bg-purple-500/10 border-purple-500/20',
+    },
+    {
+      icon: BookOpen,
+      title: 'Aptitude Test Practice',
+      desc: 'Sharpen quantitative and logical reasoning skills needed for campus and off-campus drives.',
+      colour: 'text-emerald-400',
+      bg: 'bg-emerald-500/10 border-emerald-500/20',
+    },
+    {
+      icon: Zap,
+      title: 'All-in-One Platform',
+      desc: 'Resume analysis + interview prep in a single dashboard. Jobscan & Resume Worded only do resumes.',
+      colour: 'text-amber-400',
+      bg: 'bg-amber-500/10 border-amber-500/20',
+    },
+  ]
+
+  return (
+    <div className="bg-gradient-to-br from-[#1a1a35] via-[#0f0f2a] to-[#0d0d1a] border border-indigo-500/20 rounded-2xl p-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
+          <Zap className="w-4 h-4 text-indigo-400" />
+        </div>
+        <div>
+          <h3 className="text-white font-semibold text-base">How MockWise AI Helps</h3>
+          <p className="text-indigo-300 text-xs">vs Jobscan · Resume Worded</p>
+        </div>
+      </div>
+
+      <p className="text-slate-400 text-sm mb-5 leading-relaxed">
+        Unlike standalone resume tools, MockWise AI is a <span className="text-white font-medium">complete interview preparation platform</span>.
+        Your resume feedback is directly connected to your interview practice — so improvements translate into real results.
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {features.map(({ icon: Icon, title, desc, colour, bg }, i) => (
+          <div key={i} className={`border rounded-xl p-4 ${bg}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Icon className={`w-4 h-4 ${colour}`} />
+              <span className={`text-xs font-semibold ${colour}`}>{title}</span>
+            </div>
+            <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Comparison table */}
+      <div className="mt-5 overflow-x-auto">
+        <table className="w-full text-xs text-left border-collapse">
+          <thead>
+            <tr className="border-b border-[#2d2d4e]">
+              <th className="py-2 pr-4 text-slate-500 font-medium">Feature</th>
+              <th className="py-2 px-3 text-slate-400 font-medium text-center">MockWise AI</th>
+              <th className="py-2 px-3 text-slate-500 font-medium text-center">Jobscan</th>
+              <th className="py-2 px-3 text-slate-500 font-medium text-center">Resume Worded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['ATS Score',              true,  true,  true ],
+              ['Section Analysis',       true,  true,  true ],
+              ['Missing Skills',         true,  true,  true ],
+              ['Actionable Suggestions', true,  true,  true ],
+              ['Coding Interview Prep',  true,  false, false],
+              ['HR Interview Simulator', true,  false, false],
+              ['Aptitude Practice',      true,  false, false],
+              ['Free to Use',            true,  false, false],
+            ].map(([feat, mw, js, rw]) => (
+              <tr key={feat} className="border-b border-[#2d2d4e]/50">
+                <td className="py-2 pr-4 text-slate-300">{feat}</td>
+                <td className="py-2 px-3 text-center">
+                  {mw ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mx-auto" /> : <XCircle className="w-3.5 h-3.5 text-slate-600 mx-auto" />}
+                </td>
+                <td className="py-2 px-3 text-center">
+                  {js ? <CheckCircle className="w-3.5 h-3.5 text-slate-400 mx-auto" /> : <XCircle className="w-3.5 h-3.5 text-slate-600 mx-auto" />}
+                </td>
+                <td className="py-2 px-3 text-center">
+                  {rw ? <CheckCircle className="w-3.5 h-3.5 text-slate-400 mx-auto" /> : <XCircle className="w-3.5 h-3.5 text-slate-600 mx-auto" />}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────
 
 export default function ResumeAnalyzerPage() {
   const { user, logout } = useAuth()
@@ -186,7 +511,7 @@ export default function ResumeAnalyzerPage() {
         <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8">
           <div>
             <h1 className="text-2xl font-bold text-white mb-2">Resume Analyzer</h1>
-            <p className="text-slate-400">Upload your resume to get instant AI-powered feedback on your skills and strengths.</p>
+            <p className="text-slate-400">Upload your resume to get instant AI-powered feedback — ATS score, section analysis, missing skills, and more.</p>
           </div>
 
           <div className="flex flex-col gap-8">
@@ -252,7 +577,7 @@ export default function ResumeAnalyzerPage() {
                 <div className="h-full flex flex-col items-center justify-center text-center p-12 bg-[#1e1e35]/20 border border-[#2d2d4e] rounded-2xl">
                   <FileText className="w-16 h-16 text-slate-600 mb-4" />
                   <h3 className="text-white font-medium mb-2">No Resume Analyzed</h3>
-                  <p className="text-slate-400 text-sm">Upload a PDF resume to see your extracted skills and strengths.</p>
+                  <p className="text-slate-400 text-sm">Upload a PDF resume to see your ATS score, skills, section analysis, and more.</p>
                 </div>
               )}
 
@@ -266,6 +591,13 @@ export default function ResumeAnalyzerPage() {
 
               {uploadStatus === 'complete' && results && (
                 <div className="space-y-6">
+
+                  {/* ── 1. ATS Score ─────────────────────────────── */}
+                  {results.atsScore != null && (
+                    <ATSScoreCard score={results.atsScore} />
+                  )}
+
+                  {/* ── 2. Key Skills Found (existing) ───────────── */}
                   <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
                     <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-emerald-400" /> Key Skills Found
@@ -279,31 +611,45 @@ export default function ResumeAnalyzerPage() {
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
-                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-blue-400" /> Top Strengths
-                    </h3>
-                    <ul className="space-y-3">
-                      {results.strengths.map((str, i) => (
-                        <li key={i} className="flex gap-3 text-slate-300 text-sm">
-                          <span className="text-blue-400 mt-0.5">•</span> {str}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {/* ── 3. Missing Skills ─────────────────────────── */}
+                  {results.missingSkills && results.missingSkills.length > 0 && (
+                    <MissingSkillsCard missingSkills={results.missingSkills} />
+                  )}
 
-                  <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
-                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-amber-400" /> Areas for Improvement
-                    </h3>
-                    <ul className="space-y-3">
-                      {results.suggestions.map((sug, i) => (
-                        <li key={i} className="flex gap-3 text-slate-300 text-sm">
-                          <span className="text-amber-400 mt-0.5">•</span> {sug}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {/* ── 4. Section Analysis ──────────────────────── */}
+                  {results.sectionAnalysis && (
+                    <SectionAnalysisCard sectionAnalysis={results.sectionAnalysis} />
+                  )}
+
+                  {/* ── 5. Actionable Suggestions ────────────────── */}
+                  {results.actionableSuggestions && results.actionableSuggestions.length > 0 && (
+                    <ActionableSuggestionsCard actionableSuggestions={results.actionableSuggestions} />
+                  )}
+
+                  {/* ── 6. Strengths & Weaknesses ────────────────── */}
+                  {((results.strengths && results.strengths.length > 0) || (results.weaknesses && results.weaknesses.length > 0)) && (
+                    <StrengthsWeaknessesCard strengths={results.strengths} weaknesses={results.weaknesses} />
+                  )}
+
+                  {/* ── 7. Existing: Areas for Improvement ───────── */}
+                  {results.suggestions && results.suggestions.length > 0 && (
+                    <div className="bg-gradient-to-br from-[#1e1e35] to-[#0d0d1a] border border-[#2d2d4e] rounded-2xl p-6">
+                      <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-amber-400" /> General Suggestions
+                      </h3>
+                      <ul className="space-y-3">
+                        {results.suggestions.map((sug, i) => (
+                          <li key={i} className="flex gap-3 text-slate-300 text-sm">
+                            <span className="text-amber-400 mt-0.5">•</span> {sug}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* ── 8. MockWise AI Advantage ─────────────────── */}
+                  <MockWiseAdvantageCard />
+
                 </div>
               )}
             </div>
@@ -338,6 +684,7 @@ export default function ResumeAnalyzerPage() {
                     const date = new Date(entry.createdAt)
                     const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                     const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                    const atsInfo = entry.atsScore != null ? atsColour(entry.atsScore) : null
 
                     return (
                       <div
@@ -363,7 +710,14 @@ export default function ResumeAnalyzerPage() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                            {/* ATS Score badge */}
+                            {atsInfo && (
+                              <span className={`hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full border items-center gap-1 font-semibold ${atsInfo.text}`}
+                                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                                <Target className="w-3 h-3" /> {entry.atsScore}
+                              </span>
+                            )}
                             <span className="hidden sm:inline-flex text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                               {entry.skills?.length ?? 0} skills
                             </span>
@@ -378,6 +732,26 @@ export default function ResumeAnalyzerPage() {
                         {isOpen && (
                           <div className="px-5 pb-5 space-y-5 border-t border-[#2d2d4e] pt-4">
 
+                            {/* ATS Score in history */}
+                            {entry.atsScore != null && (
+                              <div>
+                                <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <Target className="w-3.5 h-3.5" /> ATS Score
+                                </p>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1 h-2 bg-[#2d2d4e] rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{ width: `${entry.atsScore}%`, background: atsColour(entry.atsScore).bar }}
+                                    />
+                                  </div>
+                                  <span className={`text-sm font-bold ${atsColour(entry.atsScore).text}`}>
+                                    {entry.atsScore}/100
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Skills */}
                             {entry.skills?.length > 0 && (
                               <div>
@@ -390,6 +764,43 @@ export default function ResumeAnalyzerPage() {
                                       {skill}
                                     </span>
                                   ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Missing Skills */}
+                            {entry.missingSkills?.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <XCircle className="w-3.5 h-3.5" /> Missing Skills
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {entry.missingSkills.map((skill, i) => (
+                                    <span key={i} className="px-2.5 py-1 bg-rose-500/10 text-rose-300 border border-rose-500/20 rounded-full text-xs">
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Section Analysis */}
+                            {entry.sectionAnalysis && Object.keys(entry.sectionAnalysis).length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <Shield className="w-3.5 h-3.5" /> Section Analysis
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {Object.entries(SECTION_META).map(([key, { label }]) => {
+                                    const status = entry.sectionAnalysis[key] || 'missing'
+                                    const sm = STATUS_META[status] || STATUS_META.missing
+                                    const SIcon = sm.Icon
+                                    return (
+                                      <span key={key} className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs ${sm.bg} ${sm.cls}`}>
+                                        <SIcon className="w-3 h-3" /> {label}
+                                      </span>
+                                    )
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -410,11 +821,30 @@ export default function ResumeAnalyzerPage() {
                               </div>
                             )}
 
+                            {/* Actionable Suggestions */}
+                            {entry.actionableSuggestions?.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <TrendingUp className="w-3.5 h-3.5" /> Actionable Suggestions
+                                </p>
+                                <ol className="space-y-1.5">
+                                  {entry.actionableSuggestions.map((sug, i) => (
+                                    <li key={i} className="flex gap-2 text-slate-300 text-sm">
+                                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold flex items-center justify-center">
+                                        {i + 1}
+                                      </span>
+                                      <span className="pt-0.5">{sug}</span>
+                                    </li>
+                                  ))}
+                                </ol>
+                              </div>
+                            )}
+
                             {/* Suggestions */}
                             {entry.suggestions?.length > 0 && (
                               <div>
                                 <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                  <AlertCircle className="w-3.5 h-3.5" /> Areas for Improvement
+                                  <AlertCircle className="w-3.5 h-3.5" /> General Suggestions
                                 </p>
                                 <ul className="space-y-1.5">
                                   {entry.suggestions.map((sug, i) => (

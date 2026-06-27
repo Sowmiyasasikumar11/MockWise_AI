@@ -108,20 +108,57 @@ exports.analyzeResume = async (req, res, next) => {
     }
 
     const prompt = `
-      You are an expert technical recruiter and resume reviewer.
-      Analyze the following resume text and extract the key skills, top strengths, and major areas for improvement.
-      Do not generate a score. Do not generate job matching details.
-      
-      Resume Text:
-      ${parsedText}
-      
-      Return ONLY valid JSON format. No markdown blocks, no backticks, no explanatory text.
-      The output must be a JSON object with the following exact structure:
-      {
-        "skills": ["Skill 1", "Skill 2"],
-        "strengths": ["Strength 1", "Strength 2"],
-        "suggestions": ["Suggestion 1", "Suggestion 2"]
-      }
+You are an expert technical recruiter and ATS (Applicant Tracking System) specialist with deep knowledge of resume best practices.
+
+Analyze the following resume text and return a comprehensive evaluation covering all aspects that modern ATS systems and recruiters look for.
+
+Resume Text:
+${parsedText}
+
+Return ONLY valid JSON — no markdown, no backticks, no explanatory text outside the JSON object.
+The JSON must strictly follow this structure (all fields required):
+
+{
+  "skills": ["Skill 1", "Skill 2"],
+  "strengths": ["Strength 1", "Strength 2"],
+  "suggestions": ["Suggestion 1", "Suggestion 2"],
+  "atsScore": 72,
+  "missingSkills": ["Missing Skill 1", "Missing Skill 2"],
+  "sectionAnalysis": {
+    "contact": "good",
+    "summary": "needs_improvement",
+    "education": "good",
+    "skills": "good",
+    "projects": "missing",
+    "experience": "good",
+    "certifications": "missing"
+  },
+  "actionableSuggestions": [
+    "Specific suggestion 1",
+    "Specific suggestion 2",
+    "Specific suggestion 3",
+    "Specific suggestion 4",
+    "Specific suggestion 5"
+  ],
+  "weaknesses": ["Weakness 1", "Weakness 2"]
+}
+
+Rules:
+- "skills": List all technical and soft skills found in the resume (at least 5).
+- "strengths": List 3-5 top strengths observed in the resume content.
+- "suggestions": List 3-5 general areas for improvement.
+- "atsScore": An integer from 0 to 100 representing estimated ATS compatibility. Consider: keyword density, section presence, formatting clarity, quantified achievements, and action verbs. Be realistic — most resumes score between 45-85.
+- "missingSkills": List 5-10 important skills relevant to the candidate's field that are NOT present in the resume. Base this on the resume's apparent job target and industry.
+- "sectionAnalysis": Evaluate each of the 7 sections. Use exactly one of: "good", "needs_improvement", or "missing".
+  - "contact": Has name, email, phone, LinkedIn/GitHub?
+  - "summary": Has a professional summary or objective statement?
+  - "education": Has degree, institution, graduation year?
+  - "skills": Has a dedicated skills section?
+  - "projects": Has projects with descriptions and tech used?
+  - "experience": Has work experience with company, role, dates, bullet points?
+  - "certifications": Has any certifications or courses listed?
+- "actionableSuggestions": Provide exactly 5-10 highly specific, actionable suggestions. Each must be a concrete step the candidate can take immediately (e.g., "Add quantified metrics to your internship bullet points, such as 'Reduced page load time by 40%'").
+- "weaknesses": List 3-5 key weaknesses or gaps observed in the resume.
     `;
 
     const result = await generateWithModelFallback(prompt);
@@ -142,14 +179,34 @@ exports.analyzeResume = async (req, res, next) => {
       return res.status(500).json({ success: false, message: 'AI returned malformed JSON.' });
     }
 
+    // Normalise sectionAnalysis values to the enum set
+    const VALID_STATUSES = ['good', 'needs_improvement', 'missing'];
+    const SECTION_KEYS = ['contact', 'summary', 'education', 'skills', 'projects', 'experience', 'certifications'];
+    const rawSection = analysisData.sectionAnalysis || {};
+    const sectionAnalysis = {};
+    for (const key of SECTION_KEYS) {
+      const val = (rawSection[key] || '').toLowerCase().replace(/\s/g, '_');
+      sectionAnalysis[key] = VALID_STATUSES.includes(val) ? val : 'missing';
+    }
+
+    // Clamp ATS score to 0-100
+    const atsScore = Math.min(100, Math.max(0, parseInt(analysisData.atsScore, 10) || 0));
+
     // Save to DB
     const resumeAnalysis = await ResumeAnalysis.create({
       userId,
       filename,
       resumeText: parsedText,
-      skills: analysisData.skills || [],
+      // Existing fields
+      skills:    analysisData.skills    || [],
       strengths: analysisData.strengths || [],
-      suggestions: analysisData.suggestions || []
+      suggestions: analysisData.suggestions || [],
+      // New enhanced fields
+      atsScore,
+      missingSkills:        analysisData.missingSkills        || [],
+      sectionAnalysis,
+      actionableSuggestions: analysisData.actionableSuggestions || [],
+      weaknesses:            analysisData.weaknesses            || [],
     });
 
     // Update user's resume stats (denormalized for dashboard reads)
