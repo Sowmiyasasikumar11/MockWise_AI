@@ -1,7 +1,9 @@
 const express = require('express');
 const {
   generateInterview,
-  getHistory
+  getHistory,
+  submitInterview,
+  getInterviewById
 } = require('../controllers/hr.controller');
 
 const { authMiddleware } = require('../middleware/authMiddleware');
@@ -32,6 +34,13 @@ router.post(
   generateInterview
 );
 
+router.post(
+  '/submit/:id',
+  aiLimiter,
+  submitInterview
+);
+
 router.get('/history', getHistory);
+router.get('/:id', getInterviewById);
 
 module.exports = router;

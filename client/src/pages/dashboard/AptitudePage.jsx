@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import Sidebar from '../../components/dashboard/Sidebar'
 import { generateAptitudeQuestions, submitAptitudeTest } from '../../services/aptitudeService'
+import authService from '../../services/authService'
 import toast from 'react-hot-toast'
 
 export default function AptitudePage() {
@@ -115,10 +116,13 @@ export default function AptitudePage() {
       if (res.success) {
         setResult(res.data)
         setStep('RESULT')
-        // Update user stats in context if needed
-        if (updateUser) {
-          updateUser() // Refresh user data to update stats
-        }
+        // Re-fetch fresh user data so dashboard stats update immediately
+        try {
+          const meRes = await authService.getMe()
+          if (meRes.data?.user && updateUser) {
+            updateUser(meRes.data.user)
+          }
+        } catch (_) { /* non-critical — stats will refresh on next page load */ }
       }
     } catch (err) {
       console.error(err)

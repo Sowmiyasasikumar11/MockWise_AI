@@ -15,8 +15,11 @@ import DashboardPage from './pages/dashboard/DashboardPage'
 import AptitudePage from './pages/dashboard/AptitudePage'
 import AptitudeHistoryPage from './pages/dashboard/AptitudeHistoryPage'
 import CodingPage from './pages/coding/CodingPage'
+import CodingHistoryPage from './pages/coding/CodingHistoryPage'
 import ResumeAnalyzerPage from './pages/resume/ResumeAnalyzerPage'
 import HRInterviewPage from './pages/hr/HRInterviewPage'
+import HRResultPage from './pages/hr/HRResultPage'
+import HRHistoryPage from './pages/hr/HRHistoryPage'
 
 // ────────────────────────────────────────────────────────────────────
 // PublicRoute — redirects already-authenticated users to /dashboard.
@@ -81,8 +84,11 @@ function App() {
             <Route path="/aptitude"   element={<AptitudePage />} />
             <Route path="/aptitude/history" element={<AptitudeHistoryPage />} />
             <Route path="/coding"     element={<CodingPage />} />
+            <Route path="/coding/history" element={<CodingHistoryPage />} />
             <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
             <Route path="/hr" element={<HRInterviewPage />} />
+            <Route path="/hr/result/:id" element={<HRResultPage />} />
+            <Route path="/hr/history" element={<HRHistoryPage />} />
             {/* Module routes added in later sprints */}
           </Route>
 

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import Sidebar from '../../components/dashboard/Sidebar'
 import { generateQuestion, getAIHint, submitSolution, runCode as runCodeApi } from '../../services/codingService'
+import authService from '../../services/authService'
 import toast from 'react-hot-toast'
 import Editor from '@monaco-editor/react'
 
@@ -22,6 +23,15 @@ export default function CodingPage() {
   const [category, setCategory] = useState('Arrays')
   const [difficulty, setDifficulty] = useState('Medium')
   const [language, setLanguage] = useState('Python')
+  
+  // Boilerplate per language
+  const getBoilerplate = (lang) => {
+    if (lang === 'Python')     return 'def solve():\n    pass'
+    if (lang === 'C++')        return '#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}'
+    if (lang === 'Java')       return 'class Solution {\n    public static void main(String[] args) {\n        \n    }\n}'
+    if (lang === 'JavaScript') return 'function solve() {\n    // your solution here\n}'
+    return ''
+  }
   
   const [question, setQuestion] = useState(null)
   const [code, setCode] = useState('')
@@ -42,10 +52,7 @@ export default function CodingPage() {
       const data = await generateQuestion(category, difficulty)
       if (data.success && data.data) {
         setQuestion(data.data)
-        // Set some default code based on language
-        if (language === 'Python') setCode('def solve():\n    pass')
-        else if (language === 'C++') setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n    return 0;\n}')
-        else if (language === 'Java') setCode('class Solution {\n    public static void main(String[] args) {\n        \n    }\n}')
+        setCode(getBoilerplate(language))
         
         setStep('CODING')
       } else {
@@ -106,9 +113,13 @@ export default function CodingPage() {
       const res = await submitSolution(category, difficulty, language, question, code, isPassed)
       if (res.success) {
         setStep('RESULT')
-        if (updateUser) {
-          updateUser() // Refresh stats
-        }
+        // Re-fetch fresh user data so dashboard stats update immediately
+        try {
+          const meRes = await authService.getMe()
+          if (meRes.data?.user && updateUser) {
+            updateUser(meRes.data.user)
+          }
+        } catch (_) { /* non-critical */ }
       }
     } catch (err) {
       console.error(err)
@@ -198,8 +209,8 @@ export default function CodingPage() {
           <label className="text-sm font-semibold text-slate-300 uppercase tracking-wider block">
             Select Language
           </label>
-          <div className="grid grid-cols-3 gap-4">
-            {['Python', 'Java', 'C++'].map(lang => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {['Python', 'Java', 'C++', 'JavaScript'].map(lang => (
               <button
                 key={lang}
                 onClick={() => setLanguage(lang)}
@@ -317,6 +328,7 @@ export default function CodingPage() {
                 <option value="Python">Python</option>
                 <option value="Java">Java</option>
                 <option value="C++">C++</option>
+                <option value="JavaScript">JavaScript</option>
               </select>
             </div>
             <div className="flex gap-2">
@@ -346,7 +358,7 @@ export default function CodingPage() {
             <Editor
               height="100%"
               theme="vs-dark"
-              language={language.toLowerCase() === 'c++' ? 'cpp' : language.toLowerCase()}
+              language={language === 'C++' ? 'cpp' : language === 'JavaScript' ? 'javascript' : language.toLowerCase()}
               value={code}
               onChange={handleCodeChange}
               options={{
@@ -388,6 +400,13 @@ export default function CodingPage() {
         >
           Solve Another Problem
         </button>
+        <Link
+          to="/coding/history"
+          className="px-6 py-3 rounded-xl border border-indigo-500/40 text-indigo-300 hover:bg-indigo-600/10 font-medium transition-colors flex items-center justify-center gap-2"
+        >
+          <History className="w-4 h-4" />
+          View My History
+        </Link>
         <Link
           to="/dashboard"
           className="px-6 py-3 rounded-xl border border-[#2d2d4e] text-slate-300 hover:bg-[#1e1e35] font-medium transition-colors"
@@ -447,12 +466,19 @@ export default function CodingPage() {
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
             <Code2 className="w-4 h-4 text-indigo-400" />
             <span className="text-white font-semibold text-sm">Coding Module</span>
           </div>
 
           <div className="flex items-center gap-4 ml-auto">
+            <Link
+              to="/coding/history"
+              className="hidden md:flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              <History className="w-4 h-4" />
+              History
+            </Link>
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white cursor-pointer">
               {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Mic, Menu, X, Briefcase, Activity,
-  ChevronRight, ChevronLeft, CheckCircle2, History
+  ChevronRight, ChevronLeft, CheckCircle2, History, Brain
 } from 'lucide-react'
 import Sidebar from '../../components/dashboard/Sidebar'
 import { generateHRInterview } from '../../services/hrService'
@@ -28,6 +28,7 @@ export default function HRInterviewPage() {
   const [questions, setQuestions] = useState([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState({}) // { questionIndex: answerText }
+  const [interviewId, setInterviewId] = useState(null)
 
   // Cooldown countdown (rate limit)
   const [countdown, setCountdown] = useState(0)
@@ -50,6 +51,7 @@ export default function HRInterviewPage() {
       const data = await generateHRInterview(role, experience, numQuestions)
       if (data.success && data.data.questions.length > 0) {
         setQuestions(data.data.questions)
+        setInterviewId(data.data.interviewId)
         setStep('INTERVIEW')
       } else {
         throw new Error('Failed to load questions')
@@ -101,10 +103,19 @@ export default function HRInterviewPage() {
   }
 
   const handleFinish = async () => {
-    // In Phase 1, we just consider it done on the frontend as the server already generated the questions.
-    // Saving answers will be part of Phase 2 with AI Evaluation.
-    setStep('DONE')
-    toast.success('Interview completed!')
+    try {
+      setStep('LOADING_EVALUATION')
+      const { submitHRInterview } = await import('../../services/hrService')
+      const result = await submitHRInterview(interviewId, answers)
+      if (result.success) {
+        toast.success('Interview evaluated successfully!')
+        navigate(`/hr/result/${interviewId}`)
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error(error.response?.data?.message || 'Failed to submit interview for evaluation.')
+      setStep('INTERVIEW')
+    }
   }
 
   // ── Render ─────────────────────────────────────────────────────────
@@ -344,6 +355,19 @@ export default function HRInterviewPage() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* LOADING EVALUATION STEP */}
+          {step === 'LOADING_EVALUATION' && (
+            <div className="flex flex-col items-center justify-center h-full max-h-[600px]">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-purple-500/20 rounded-full"></div>
+                <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin absolute inset-0"></div>
+                <Brain className="w-6 h-6 text-purple-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+              </div>
+              <h3 className="text-xl font-bold text-white mt-6 mb-2">Evaluating Your Answers</h3>
+              <p className="text-slate-400 text-sm">Our AI is analyzing your performance. This might take a few moments...</p>
             </div>
           )}
 

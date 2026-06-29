@@ -2,16 +2,17 @@ import { Link } from 'react-router-dom'
 import {
   Brain, ChevronLeft, ChevronRight, LayoutDashboard,
   Code2, Mic, Briefcase, FileText, User,
-  Settings, LogOut, BarChart3, Bot
+  Settings, LogOut, BarChart3, Bot, History
 } from 'lucide-react'
 
 // ── Navigation items ────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Dashboard',       href: '/dashboard',  active: false },
-  { icon: Brain,           label: 'Aptitude',        href: '/aptitude',   active: false },
-  { icon: Code2,           label: 'Coding',          href: '/coding',     active: false },
+  { icon: LayoutDashboard, label: 'Dashboard',       href: '/dashboard',       active: false },
+  { icon: Brain,           label: 'Aptitude',        href: '/aptitude',        active: false },
+  { icon: Code2,           label: 'Coding',          href: '/coding',          active: false },
+  { icon: History,         label: 'Code History',    href: '/coding/history',  active: false },
   { icon: FileText,        label: 'Resume Analyzer', href: '/resume-analyzer', soon: false },
-  { icon: Mic,             label: 'HR Interview',    href: '/hr',         soon: false },
+  { icon: Mic,             label: 'HR Interview',    href: '/hr',              soon: false },
 ]
 
 const NAV_BOTTOM = [

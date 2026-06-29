@@ -3,14 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   Brain, LayoutDashboard,
-  Code2, Mic, Briefcase, FileText, BarChart3, User,
-  Settings, LogOut, Zap, BookOpen, TrendingUp, Menu, X,
-  Target, Award, Clock, Sparkles, ChevronDown, Bot
+  Code2, Mic, FileText, User,
+  Zap, BookOpen, TrendingUp, Menu, X,
+  Target, Clock, Sparkles, ArrowRight
 } from 'lucide-react'
 import Sidebar from '../../components/dashboard/Sidebar'
 import api from '../../services/api'
 
-// ── 30 Career & Interview-Focused Motivational Quotes ──────────────
+// ── Motivational Quotes ─────────────────────────────────────────────
 const QUOTES = [
   { text: "Every bug you solve today becomes experience you leverage tomorrow.", role: null },
   { text: "Consistency beats intensity in interview preparation.", role: null },
@@ -46,7 +46,26 @@ const QUOTES = [
   { text: "The best preparation is not cramming — it's deep, deliberate practice.", role: null },
 ]
 
-
+// ── Recommend Card sub-component ────────────────────────────────────
+function RecommendCard({ href, icon: Icon, iconColor, bg, title, desc, cta }) {
+  return (
+    <Link
+      to={href}
+      className="flex items-center gap-4 p-3.5 rounded-xl bg-[#1e1e35]/40 border border-[#2d2d4e] hover:bg-[#1e1e35]/80 hover:border-[#3d3d5e] transition-all duration-200 group"
+    >
+      <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
+        <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-medium">{title}</p>
+        <p className="text-slate-400 text-xs mt-0.5 truncate">{desc}</p>
+      </div>
+      <span className={`text-xs font-medium ${iconColor} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 flex-shrink-0`}>
+        {cta} <ArrowRight className="w-3 h-3" />
+      </span>
+    </Link>
+  )
+}
 
 // ── Main Dashboard Component ────────────────────────────────────────
 function DashboardPage() {
@@ -56,19 +75,34 @@ function DashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [recentActivity, setRecentActivity] = useState(null)
+  const [recentHR, setRecentHR] = useState(null)
+  const [recentCoding, setRecentCoding] = useState(null)
   
   useEffect(() => {
-    const fetchRecentActivity = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await api.get('/aptitude/history')
-        if (response.data.success && response.data.data.length > 0) {
-          setRecentActivity(response.data.data[0])
+        const [aptResponse, hrResponse, codingResponse] = await Promise.all([
+          api.get('/aptitude/history'),
+          api.get('/hr/history'),
+          api.get('/coding/history')
+        ])
+        
+        if (aptResponse.data.success && aptResponse.data.data.length > 0) {
+          setRecentActivity(aptResponse.data.data[0])
+        }
+        
+        if (hrResponse.data.success && hrResponse.data.data.length > 0) {
+          setRecentHR(hrResponse.data.data[0])
+        }
+
+        if (codingResponse.data.success && codingResponse.data.data.length > 0) {
+          setRecentCoding(codingResponse.data.data[0])
         }
       } catch (err) {
-        console.error("Failed to fetch recent activity", err)
+        console.error("Failed to fetch dashboard data", err)
       }
     }
-    fetchRecentActivity()
+    fetchDashboardData()
   }, [])
 
   // Pick a random quote, biased towards user's target roles if available
@@ -94,13 +128,20 @@ function DashboardPage() {
   }
 
   const stats = [
-    { label: 'Interviews',       value: user?.totalInterviews ?? 0,                                         icon: Mic,       color: 'from-indigo-500/20 to-indigo-600/10',  border: 'border-indigo-500/20',  text: 'text-indigo-400'  },
+    { label: 'HR Interviews',    value: user?.totalInterviews ?? 0,                                         icon: Mic,       color: 'from-indigo-500/20 to-indigo-600/10',  border: 'border-indigo-500/20',  text: 'text-indigo-400'  },
+    { label: 'Avg HR Score',     value: user?.averageScore ? `${user.averageScore.toFixed(0)}%` : '—',      icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20',  text: 'text-purple-400'  },
     { label: 'Aptitude Tests',   value: user?.aptitudeTestsTaken ?? 0,                                      icon: Brain,     color: 'from-blue-500/20 to-blue-600/10',      border: 'border-blue-500/20',    text: 'text-blue-400'    },
-    { label: 'Avg Aptitude',     value: user?.averageAptitudeScore ? `${user.averageAptitudeScore.toFixed(0)}%` : '—', icon: TrendingUp, color: 'from-purple-500/20 to-purple-600/10', border: 'border-purple-500/20',  text: 'text-purple-400'  },
+    { label: 'Avg Aptitude',     value: user?.averageAptitudeScore ? `${user.averageAptitudeScore.toFixed(0)}%` : '—', icon: TrendingUp, color: 'from-indigo-500/20 to-indigo-600/10', border: 'border-indigo-500/20',  text: 'text-indigo-400'  },
     { label: 'Coding Solved',    value: user?.codingProblemsSolved ?? 0,                                    icon: Code2,     color: 'from-emerald-500/20 to-emerald-600/10', border: 'border-emerald-500/20', text: 'text-emerald-400' },
-    { label: 'Coding Acc',       value: user?.codingAccuracy ? `${user.codingAccuracy}%` : '—',             icon: Award,     color: 'from-rose-500/20 to-rose-600/10',      border: 'border-rose-500/20',    text: 'text-rose-400'    },
     { label: 'Resumes Analyzed', value: user?.resumesAnalyzed ?? 0,                                         icon: FileText,  color: 'from-violet-500/20 to-violet-600/10',  border: 'border-violet-500/20',  text: 'text-violet-400'  },
   ]
+
+  // ── Build smart recommendations ──────────────────────────────────
+  const hasAnyActivity = !!(recentActivity || recentHR || recentCoding)
+  const aptScore   = user?.averageAptitudeScore ?? null
+  const hrCount    = user?.totalInterviews ?? 0
+  const codingSolved = user?.codingProblemsSolved ?? 0
+  const resumesDone  = user?.resumesAnalyzed ?? 0
 
   return (
     <div className="flex h-screen overflow-hidden"
@@ -214,6 +255,7 @@ function DashboardPage() {
               )}
             </div>
 
+            {/* ── Stats Grid ───────────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {stats.map(({ label, value, icon: Icon, color, border, text }) => (
                 <div
@@ -241,10 +283,10 @@ function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-indigo-400 uppercase tracking-widest mb-2">
-                    Today's Motivation
+                    Today&apos;s Motivation
                   </p>
                   <blockquote className="text-white font-medium text-base sm:text-lg leading-relaxed">
-                    "{quote.text}"
+                    &quot;{quote.text}&quot;
                   </blockquote>
                   {quote.role && (
                     <p className="text-indigo-400 text-xs mt-2 flex items-center gap-1.5">
@@ -265,7 +307,30 @@ function DashboardPage() {
                   <h2 className="text-white font-semibold text-sm">Recent Activity</h2>
                 </div>
                 <div className="space-y-3">
-                  {recentActivity ? (
+                  {recentHR && (
+                    <div className="flex items-center gap-4 p-3 rounded-xl bg-[#1e1e35]/40 border border-[#2d2d4e] hover:bg-[#1e1e35]/80 transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                        <Mic className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">HR Interview: {recentHR.role}</p>
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {new Date(recentHR.createdAt).toLocaleDateString()} · {recentHR.experience}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-sm font-bold ${
+                          recentHR.overallScore >= 70 ? 'text-emerald-400' :
+                          recentHR.overallScore >= 40 ? 'text-amber-400' :
+                          'text-rose-400'
+                        }`}>
+                          {recentHR.status === 'completed' ? `${recentHR.overallScore}%` : 'Pending'}
+                        </p>
+                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Score</p>
+                      </div>
+                    </div>
+                  )}
+                  {recentActivity && (
                     <div className="flex items-center gap-4 p-3 rounded-xl bg-[#1e1e35]/40 border border-[#2d2d4e] hover:bg-[#1e1e35]/80 transition-colors">
                       <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
                         <Brain className="w-5 h-5 text-indigo-400" />
@@ -287,7 +352,25 @@ function DashboardPage() {
                         <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Score</p>
                       </div>
                     </div>
-                  ) : (
+                  )}
+                  {recentCoding && (
+                    <div className="flex items-center gap-4 p-3 rounded-xl bg-[#1e1e35]/40 border border-[#2d2d4e] hover:bg-[#1e1e35]/80 transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <Code2 className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">Coding: {recentCoding.category}</p>
+                        <p className="text-slate-400 text-xs mt-0.5">
+                          {new Date(recentCoding.submittedAt || recentCoding.createdAt).toLocaleDateString()} · {recentCoding.difficulty} · {recentCoding.language}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-emerald-400">Solved</p>
+                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Status</p>
+                      </div>
+                    </div>
+                  )}
+                  {!recentHR && !recentActivity && !recentCoding && (
                     <p className="text-slate-500 text-sm text-center py-4">No activity yet. Start an interview!</p>
                   )}
                 </div>
@@ -300,7 +383,58 @@ function DashboardPage() {
                   <h2 className="text-white font-semibold text-sm">Recommended Practice</h2>
                 </div>
                 <div className="space-y-3">
-                  <p className="text-slate-500 text-sm text-center py-4">Recommendations will appear here.</p>
+                  {!hasAnyActivity ? (
+                    // First-time user: show all modules
+                    <>
+                      <RecommendCard href="/aptitude" icon={Brain} iconColor="text-indigo-400" bg="bg-indigo-500/10"
+                        title="Start Aptitude Practice" desc="Build quantitative & logical reasoning skills" cta="Practice" />
+                      <RecommendCard href="/hr" icon={Mic} iconColor="text-purple-400" bg="bg-purple-500/10"
+                        title="Try an HR Interview" desc="AI-powered behavioural interview simulation" cta="Start" />
+                      <RecommendCard href="/coding" icon={Code2} iconColor="text-emerald-400" bg="bg-emerald-500/10"
+                        title="Solve a Coding Problem" desc="Practice DSA with Monaco editor & AI hints" cta="Code" />
+                      <RecommendCard href="/resume-analyzer" icon={FileText} iconColor="text-violet-400" bg="bg-violet-500/10"
+                        title="Analyze Your Resume" desc="Get ATS score and actionable improvements" cta="Upload" />
+                    </>
+                  ) : (
+                    // Returning user: smart suggestions based on weak areas
+                    <>
+                      {(aptScore === null || aptScore < 60) && (
+                        <RecommendCard href="/aptitude" icon={Brain} iconColor="text-indigo-400" bg="bg-indigo-500/10"
+                          title={aptScore === null ? 'Try Aptitude Tests' : 'Improve Aptitude Score'}
+                          desc={aptScore === null ? 'Take your first aptitude test' : `Avg ${aptScore.toFixed(0)}% — target 70%+`}
+                          cta="Practice" />
+                      )}
+                      {hrCount < 3 && (
+                        <RecommendCard href="/hr" icon={Mic} iconColor="text-purple-400" bg="bg-purple-500/10"
+                          title="HR Interview Practice"
+                          desc={hrCount === 0 ? 'First HR session awaits you!' : 'Keep refining communication skills'}
+                          cta="Start" />
+                      )}
+                      {codingSolved < 5 && (
+                        <RecommendCard href="/coding" icon={Code2} iconColor="text-emerald-400" bg="bg-emerald-500/10"
+                          title="Solve More Problems"
+                          desc={`${codingSolved} solved — aim for 10+ for strong DSA prep`}
+                          cta="Code Now" />
+                      )}
+                      {resumesDone === 0 && (
+                        <RecommendCard href="/resume-analyzer" icon={FileText} iconColor="text-violet-400" bg="bg-violet-500/10"
+                          title="Analyze Your Resume"
+                          desc="Get ATS score, missing skills, and improvement tips"
+                          cta="Upload" />
+                      )}
+                      {/* All areas covered — advanced tips */}
+                      {aptScore >= 60 && hrCount >= 3 && codingSolved >= 5 && resumesDone >= 1 && (
+                        <>
+                          <RecommendCard href="/coding" icon={Code2} iconColor="text-emerald-400" bg="bg-emerald-500/10"
+                            title="Challenge: Hard Problems" desc="Push your DSA skills to the next level" cta="Try Hard" />
+                          <RecommendCard href="/aptitude" icon={Brain} iconColor="text-indigo-400" bg="bg-indigo-500/10"
+                            title="Perfect Your Aptitude" desc="Aim for 90%+ for top-tier placement readiness" cta="Practice" />
+                          <RecommendCard href="/hr" icon={Mic} iconColor="text-purple-400" bg="bg-purple-500/10"
+                            title="Sharpen HR Answers" desc="STAR method mastery for behavioural questions" cta="Practice" />
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

@@ -31,7 +31,26 @@ const hrInterviewSchema = new mongoose.Schema(
       type: String,
       enum: ['in_progress', 'completed'],
       default: 'in_progress',
-    }
+    },
+    evaluation: [
+      {
+        questionText: String,
+        userAnswer: String,
+        relevanceScore: Number,
+        communicationScore: Number,
+        confidenceScore: Number,
+        feedback: String
+      }
+    ],
+    overallScore: { type: Number, default: 0 },
+    communicationScore: { type: Number, default: 0 },
+    confidenceScore: { type: Number, default: 0 },
+    starScore: { type: Number, default: 0 },
+    professionalismScore: { type: Number, default: 0 },
+    strengths: [String],
+    weaknesses: [String],
+    suggestions: [String],
+    completedAt: { type: Date }
   },
   { timestamps: true }
 );

@@ -9,3 +9,13 @@ export const getHRHistory = async () => {
   const response = await api.get('/hr/history');
   return response.data;
 };
+
+export const submitHRInterview = async (id, answers) => {
+  const response = await api.post(`/hr/submit/${id}`, { answers });
+  return response.data;
+};
+
+export const getHRInterviewById = async (id) => {
+  const response = await api.get(`/hr/${id}`);
+  return response.data;
+};

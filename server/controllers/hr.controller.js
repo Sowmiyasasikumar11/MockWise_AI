@@ -124,6 +124,133 @@ exports.generateInterview = async (req, res, next) => {
   }
 };
 
+const User = require('../models/User.model');
+
+exports.submitInterview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { answers } = req.body; // { questionIndex: 'answer text' }
+    const userId = req.user.id;
+
+    if (!answers || Object.keys(answers).length === 0) {
+      return res.status(400).json({ success: false, message: 'No answers provided.' });
+    }
+
+    const interview = await HRInterview.findOne({ _id: id, userId });
+    if (!interview) {
+      return res.status(404).json({ success: false, message: 'Interview not found.' });
+    }
+
+    if (interview.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'Interview already completed.' });
+    }
+
+    // Populate answers in questions array
+    const questionsAndAnswers = interview.questions.map((q, index) => {
+      q.userAnswer = answers[index] || '';
+      return {
+        questionText: q.text,
+        userAnswer: q.userAnswer
+      };
+    });
+
+    // Generate evaluation prompt
+    const prompt = `
+      You are an expert HR Manager evaluating a candidate for a ${interview.role} role with ${interview.experience} experience.
+      Evaluate the candidate's answers to the following HR interview questions.
+      
+      Here are the questions and answers:
+      ${JSON.stringify(questionsAndAnswers, null, 2)}
+      
+      Provide a detailed evaluation structured EXACTLY as the following JSON. Do not include markdown blocks like \`\`\`json or \`\`\`.
+      {
+        "evaluation": [
+          {
+            "questionText": "Question 1",
+            "userAnswer": "Candidate answer 1",
+            "relevanceScore": 85,
+            "communicationScore": 80,
+            "confidenceScore": 75,
+            "feedback": "Constructive feedback on how to improve this specific answer."
+          }
+          // ... repeat for all questions
+        ],
+        "overallScore": 80,
+        "communicationScore": 82,
+        "confidenceScore": 78,
+        "starScore": 85,
+        "professionalismScore": 90,
+        "strengths": ["Strength 1", "Strength 2"],
+        "weaknesses": ["Area to improve 1", "Area to improve 2"],
+        "suggestions": ["Actionable advice 1", "Actionable advice 2"]
+      }
+      Scores must be out of 100.
+    `;
+
+    const result = await generateWithModelFallback(prompt);
+    let responseText = result.response.text();
+    
+    // Strip markdown code fences if Gemini wrapped the JSON in ```json ... ```
+    responseText = responseText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/gi, '').trim();
+    // Extract the outermost JSON object
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      responseText = jsonMatch[0];
+    }
+
+    let evaluationResult;
+    try {
+      evaluationResult = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini evaluation response:', responseText);
+      return res.status(500).json({ success: false, message: 'AI returned malformed JSON during evaluation.' });
+    }
+
+    // Fallback scores in case AI misses them
+    const safeScore = (val) => typeof val === 'number' && !isNaN(val) ? val : 0;
+
+    interview.evaluation = evaluationResult.evaluation || [];
+    interview.overallScore = safeScore(evaluationResult.overallScore);
+    interview.communicationScore = safeScore(evaluationResult.communicationScore);
+    interview.confidenceScore = safeScore(evaluationResult.confidenceScore);
+    interview.starScore = safeScore(evaluationResult.starScore);
+    interview.professionalismScore = safeScore(evaluationResult.professionalismScore);
+    interview.strengths = evaluationResult.strengths || [];
+    interview.weaknesses = evaluationResult.weaknesses || [];
+    interview.suggestions = evaluationResult.suggestions || [];
+    interview.status = 'completed';
+    interview.completedAt = new Date();
+
+    // Update user stats
+    const user = await User.findById(userId);
+    if (user) {
+      const totalInterviews = user.totalInterviews || 0;
+      const currentAvg = user.averageScore || 0;
+      
+      const newTotal = totalInterviews + 1;
+      const newAvg = ((currentAvg * totalInterviews) + interview.overallScore) / newTotal;
+      
+      user.totalInterviews = newTotal;
+      user.averageScore = newAvg;
+      await user.save();
+    }
+
+    // Save interview last so it doesn't get marked completed if user save fails
+    await interview.save();
+
+    res.status(200).json({
+      success: true,
+      data: interview
+    });
+  } catch (error) {
+    console.error('Error submitting HR interview:', error);
+    if (error.status === 429 || error.status === 503) {
+      return res.status(429).json({ success: false, message: 'AI models rate limited. Try again later.' });
+    }
+    res.status(500).json({ success: false, message: `Server error during evaluation: ${error.message}` });
+  }
+};
+
 exports.getHistory = async (req, res, next) => {
   try {
     const history = await HRInterview.find({ userId: req.user.id })
@@ -134,6 +261,18 @@ exports.getHistory = async (req, res, next) => {
       success: true,
       data: history
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getInterviewById = async (req, res, next) => {
+  try {
+    const interview = await HRInterview.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!interview) {
+      return res.status(404).json({ success: false, message: 'Interview not found' });
+    }
+    res.status(200).json({ success: true, data: interview });
   } catch (error) {
     next(error);
   }
